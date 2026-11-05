@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KlipKilat ⚡ — AI Clipper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#14171c; --panel2:#1b1f26; --line:#262b33;
+    --text:#e8ebef; --muted:#8b93a1;
+    --volt:#c8f135;        /* score / action */
+    --kilat:#ffb627;       /* lightning amber accent */
+    --danger:#ff5d5d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
+
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:48px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:-.5px}
+  .logo .bolt{color:var(--kilat)}
+  .logo small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+
+  /* hero input */
+  .hero{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;max-width:760px;margin:0 auto 56px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .hero h1{font-size:26px;font-weight:800;margin-bottom:6px}
+  .hero p{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .inputrow{display:flex;gap:0;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .inputrow:focus-within{border-color:var(--volt)}
+  .inputrow input{flex:1;background:transparent;border:0;outline:0;color:var(--text);padding:16px 18px;font-size:15px;font-family:inherit}
+  .opts{display:flex;gap:18px;margin:16px 2px}
+  .opts label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+  .opts input{accent-color:var(--volt)}
+  .go{width:100%;margin-top:6px;background:var(--volt);color:#10130a;border:0;border-radius:12px;padding:16px;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;transition:transform .08s}
+  .go:hover{transform:translateY(-1px)}
+  .go:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+  /* pipeline status */
+  .status{max-width:760px;margin:0 auto 56px;font-family:'JetBrains Mono',monospace;font-size:13px;display:none}
+  .stage{display:flex;align-items:center;gap:12px;padding:10px 4px;color:var(--muted)}
+  .stage.active{color:var(--text)}
+  .stage.done .dot{background:var(--volt);box-shadow:none}
+  .stage .dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+  .stage.active .dot{background:var(--kilat);box-shadow:0 0 12px var(--kilat);animation:pulse 1s infinite alternate}
+  @keyframes pulse{to{opacity:.4}}
+  .bar{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-left:8px}
+  .bar i{display:block;height:100%;width:0;background:var(--kilat);transition:width .4s}
+  .stage.done .bar i{background:var(--volt);width:100%!important}
+  .errbox{color:var(--danger);padding:12px 4px;display:none;white-space:pre-wrap}
+
+  /* results */
+  .results h2{font-size:18px;font-weight:800;margin-bottom:4px}
+  .results .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .results .sub b{color:var(--kilat);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  @media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:680px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+  .card video{width:100%;aspect-ratio:9/16;background:#000;object-fit:cover}
+  .meta{padding:12px 14px 14px}
+  .scorerow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .score{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:30px;color:var(--volt)}
+  .dur{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)}
+  .title{font-size:13.5px;font-weight:600;line-height:1.35;margin-bottom:4px}
+  .hook{font-size:12px;color:var(--kilat);margin-bottom:10px}
+  .hook::before{content:"⚡ "}
+  .actions{display:flex;gap:8px;margin-top:auto}
+  .actions a{flex:1;text-align:center;font-size:12.5px;text-decoration:none;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 0}
+  .actions a:hover{border-color:var(--volt);color:var(--volt)}
+  .reason{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">Klip<span class="bolt">⚡</span>Kilat
+      <small>1 link masuk · 10 klip viral keluar</small>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>Drop a YouTube link</h1>
+    <p>AI finds the moments most likely to go viral, cuts them vertical, and burns in captions + hooks.</p>
+    <div class="inputrow">
+      <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+    </div>
+    <div class="opts">
+      <label><input id="optVertical" type="checkbox" checked> 9:16 vertical reframe</label>
+      <label><input id="optCaptions" type="checkbox" checked> Burn captions + hook</label>
+    </div>
+    <button class="go" id="go">Get clips in 1 click</button>
+  </section>
+
+  <section class="status" id="status">
+    <div class="stage" data-s="downloading"><span class="dot"></span>downloading source<div class="bar"><i></i></div></div>
+    <div class="stage" data-s="transcribing"><span class="dot"></span>transcribing (whisper)<div class="bar"><i></i></div></div>
+    <div class="stage" data-s="analyzing"><span class="dot"></span>scoring viral moments (AI)<div class="bar"><i></i></div></div>
+    <div class="stage" data-s="cutting"><span class="dot"></span>cutting + captioning clips<div class="bar"><i></i></div></div>
+    <div class="errbox" id="errbox"></div>
+  </section>
+
+  <section class="results" id="results" style="display:none">
+    <h2 id="vidtitle"></h2>
+    <div class="sub">ranked by virality · engine: <b id="engine"></b></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const STAGES = ["downloading","transcribing","analyzing","cutting"];
+let poller = null;
+
+$("#go").addEventListener("click", start);
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+
+async function start() {
+  const url = $("#url").value.trim();
+  if (!url) return $("#url").focus();
+  $("#go").disabled = true;
+  $("#status").style.display = "block";
+  $("#results").style.display = "none";
+  $("#errbox").style.display = "none";
+  $("#grid").innerHTML = "";
+  document.querySelectorAll(".stage").forEach(s => { s.className = "stage"; s.querySelector(".bar i").style.width = "0"; });
+
+  try {
+    const res = await fetch("/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url,
+        vertical: $("#optVertical").checked,
+        captions: $("#optCaptions").checked,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || "Failed to start job");
+    const { id } = await res.json();
+    poller = setInterval(() => poll(id), 1500);
+  } catch (e) { fail(e.message); }
+}
+
+async function poll(id) {
+  const job = await (await fetch(`/api/jobs/${id}`)).json();
+  const idx = STAGES.indexOf(job.stage);
+  document.querySelectorAll(".stage").forEach(el => {
+    const i = STAGES.indexOf(el.dataset.s);
+    el.classList.toggle("done", job.stage === "done" || (idx > -1 && i < idx));
+    el.classList.toggle("active", i === idx);
+    if (i === idx) el.querySelector(".bar i").style.width = job.progress + "%";
+  });
+
+  if (job.clips.length) render(job);          // stream clips in as they finish
+  if (job.stage === "done") { clearInterval(poller); $("#go").disabled = false; render(job); }
+  if (job.stage === "error") { clearInterval(poller); fail(job.error); }
+}
+
+function render(job) {
+  $("#results").style.display = "block";
+  $("#vidtitle").textContent = job.title || "";
+  $("#engine").textContent = job.engine === "claude" ? "Claude AI" : "heuristic (set ANTHROPIC_API_KEY for AI scoring)";
+  $("#grid").innerHTML = job.clips.map(c => `
+    <div class="card">
+      <video src="${c.file}" controls preload="metadata"></video>
+      <div class="meta">
+        <div class="scorerow"><span class="score">${c.score}</span><span class="dur">${fmt(c.duration)}</span></div>
+        <div class="title">${esc(c.title)}</div>
+        ${c.hook ? `<div class="hook">${esc(c.hook)}</div>` : ""}
+        <div class="actions"><a href="${c.file}" download>Download</a></div>
+        ${c.reason ? `<div class="reason">${esc(c.reason)}</div>` : ""}
+      </div>
+    </div>`).join("");
+}
+
+function fail(msg) {
+  $("#go").disabled = false;
+  const e = $("#errbox");
+  e.style.display = "block";
+  e.textContent = "✗ " + (msg || "Something went wrong");
+}
+
+const fmt = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(Math.round(s%60)).padStart(2,"0")}`;
+const esc = t => t.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+</script>
+</body>
+</html>
